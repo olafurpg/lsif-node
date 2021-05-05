@@ -22,6 +22,7 @@ import { TscMoniker, NpmMoniker } from './moniker'
 import { Emitter } from './emitter'
 
 class Linker {
+  public packageHubNames: string[] = []
   constructor(private emitter: Emitter, private idGenerator: () => Id) {}
 
   protected emit(element: Vertex | Edge): void {
@@ -31,6 +32,18 @@ class Linker {
   protected createPackageInformation(
     packageJson: PackageJson
   ): PackageInformation {
+    if (this.emitter.options.packagehub) {
+      const name = `npm:${packageJson.name}:${packageJson.version}`
+      this.packageHubNames.push(name)
+      return {
+        id: this.idGenerator(),
+        type: ElementTypes.vertex,
+        label: VertexLabels.packageInformation,
+        name: name,
+        manager: 'packagehub',
+        version: packageJson.version,
+      }
+    }
     let result: PackageInformation = {
       id: this.idGenerator(),
       type: ElementTypes.vertex,

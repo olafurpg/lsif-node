@@ -3,14 +3,17 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import { Vertex, Edge } from 'lsif-protocol'
+import { Options } from './main'
 import { Writer } from './writer'
 
 export interface Emitter {
+  options: Options
   emit(element: Vertex | Edge): void
 }
 
-export function create(writer: Writer): Emitter {
+export function create(writer: Writer, options: Options): Emitter {
   return {
-    emit: element => writer.writeln(JSON.stringify(element, undefined, 0)),
+    options: options,
+    emit: (element) => writer.writeln(JSON.stringify(element, undefined, 0)),
   }
 }

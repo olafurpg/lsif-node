@@ -22,14 +22,16 @@ import { create as createEmitter } from './emitter'
 import { ExportLinker, ImportLinker } from './linker'
 import PackageJson from './package'
 import { execSync } from 'child_process'
+import http2 from 'http2'
 
-interface Options {
+export interface Options {
   help: boolean
   version: boolean
   repositoryRoot: string
   addContents: boolean
   inferTypings: boolean
   out: string
+  packagehub?: string
 }
 
 interface OptionDescription {
@@ -137,6 +139,7 @@ async function processProject(
   emitter: Emitter,
   idGenerator: () => Id,
   importLinker: ImportLinker,
+
   exportLinker: ExportLinker | undefined,
   typingsInstaller: TypingsInstaller
 ): Promise<ProjectInfo | undefined> {
@@ -223,7 +226,7 @@ async function processProject(
         return process.cwd()
       }
     },
-    getDefaultLibFileName: options => ts.getDefaultLibFilePath(options),
+    getDefaultLibFileName: (options) => ts.getDefaultLibFilePath(options),
     directoryExists: ts.sys.directoryExists,
     getDirectories: ts.sys.getDirectories,
     fileExists: ts.sys.fileExists,
@@ -346,7 +349,7 @@ async function run(this: void, args: string[]): Promise<void> {
   let writer = new FileWriter(fs.openSync(options.out, 'w'))
   const config: ts.ParsedCommandLine = ts.parseCommandLine(args)
   const idGenerator = createIdGenerator()
-  const emitter = createEmitter(writer)
+  const emitter = createEmitter(writer, options)
   const importLinker: ImportLinker = new ImportLinker(
     projectRoot,
     emitter,
@@ -371,13 +374,38 @@ async function run(this: void, args: string[]): Promise<void> {
     exportLinker,
     new TypingsInstaller()
   )
+  if (options.packagehub) {
+    const client = http2.connect(options.packagehub)
+    const body = {
+      packages: importLinker.packageHubNames,
+    }
+    const response = await new Promise<string>((resolve, reject) => {
+      client.request({
+        ':method': 'GET',
+        ':path': '/packagehub/packages',
+        body: JSON.stringify(body),
+      })
+      const response: Uint8Array[] = []
+      client.on('data', (chunk) => {
+        response.push(chunk)
+      })
+
+      client.on('end', () => {
+        resolve(Buffer.concat(response).toString())
+      })
+      client.on('error', (err) => {
+        reject(err)
+      })
+    })
+    console.log(response)
+  }
 }
 
 export async function main(): Promise<void> {
   return run(ts.sys.args)
 }
 
-run(ts.sys.args).then(undefined, error => {
+run(ts.sys.args).then(undefined, (error) => {
   console.error(error)
   process.exitCode = 1
 })
