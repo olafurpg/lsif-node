@@ -1,10 +1,10 @@
 {
   "$schema": "https://raw.githubusercontent.com/sourcegraph/sourcegraph/master/shared/src/schema/extension.schema.json",
-  "name": "@sourcegraph/lsif-tsc",
+  "name": "@olafurpg/lsif-tsc",
   "description": "A tool to create an LSIF dump for TypeScript projects.",
   "sideEffects": false,
   "publisher": "sourcegraph",
-  "version": "0.6.8",
+  "version": "0.6.9-SNAPSHOT",
   "license": "MIT",
   "repository": {
     "type": "git",
